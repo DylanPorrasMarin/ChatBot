@@ -12,7 +12,7 @@ export default function ChatBox() {
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Mensaje inicial en el frontend y lo registra en BD (pero no como mensaje del usuario)
+    // Mensaje inicial en el frontend y lo registra en BD
     const initialMessage: Message = {
       sender: 'bot',
       text: '¡Hola! Soy tu asistente virtual. Puedes preguntarme cosas como la hora, el clima, quién me creó, entre otras. 😊',

@@ -11,6 +11,20 @@ export default function ChatBox() {
   const [messages, setMessages] = useState<Message[]>([])
   const chatEndRef = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    // Mensaje inicial en el frontend y lo registra en BD (pero no como mensaje del usuario)
+    const initialMessage: Message = {
+      sender: 'bot',
+      text: '¡Hola! Soy tu asistente virtual. Puedes preguntarme cosas como la hora, el clima, quién me creó, entre otras. 😊',
+    }
+
+    setMessages([initialMessage])
+
+    axios.post('/api/chat', { message: '__init__' }).catch(() => {
+      console.error('Error al registrar el saludo inicial')
+    })
+  }, [])
+
   const sendMessage = async () => {
     if (!input.trim()) return
     const userMessage: Message = { sender: 'user', text: input }
@@ -31,15 +45,15 @@ export default function ChatBox() {
   }, [messages])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white border rounded-2xl shadow-lg flex flex-col h-[600px]">
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white flex items-center justify-center p-2 sm:p-4">
+      <div className="w-full max-w-md sm:max-w-lg bg-white border rounded-2xl shadow-lg flex flex-col h-[50vh] sm:h-[600px]">
         <div className="bg-blue-600 text-white text-lg font-semibold px-4 py-3 rounded-t-2xl">
           ChatBot Asistente
         </div>
-        <div className="flex-1 p-4 overflow-y-auto space-y-3">
+        <div className="flex-1 p-3 overflow-y-auto space-y-3 max-h-[60vh] sm:max-h-[450px]">
           {messages.map((msg, index) => (
             <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] px-4 py-2 rounded-lg ${msg.sender === 'user'
+              <div className={`max-w-[80%] px-4 py-2 rounded-lg ${msg.sender === 'user'
                 ? 'bg-blue-500 text-white rounded-br-none'
                 : 'bg-gray-200 text-gray-800 rounded-bl-none'}`}>
                 {msg.text}
@@ -48,7 +62,7 @@ export default function ChatBox() {
           ))}
           <div ref={chatEndRef} />
         </div>
-        <div className="flex p-4 border-t gap-2">
+        <div className="flex p-3 border-t gap-2">
           <input
             className="flex-1 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             placeholder="Escribe tu pregunta..."

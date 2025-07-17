@@ -34,3 +34,5 @@ Thumbs.db
 coverage/
 *.log
 /generated/prisma
+
+/generated/prisma

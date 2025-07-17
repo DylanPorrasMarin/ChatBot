@@ -1,0 +1,25 @@
+// Este bloque le dice a Prisma qué base de datos usar
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Este bloque es necesario para generar el cliente Prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+// modelos:
+model Message {
+  id        Int      @id @default(autoincrement())
+  sender    String
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model DefaultAnswer {
+  id        Int      @id @default(autoincrement())
+  keywords  String   // Palabras clave separadas por coma: "hola,hey,buenas"
+  response  String
+  createdAt DateTime @default(now())
+}

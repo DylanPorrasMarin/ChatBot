@@ -6,6 +6,16 @@ type Data = {
   suggestions?: string[]
 }
 
+// Función para eliminar tildes, comas, mayúsculas, etc.
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD') // descompone letras con tildes
+    .replace(/[\u0300-\u036f]/g, '') // elimina los acentos
+    .replace(/[^\w\s]/gi, '') // elimina puntuación
+    .trim()
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
@@ -15,7 +25,6 @@ export default async function handler(
   }
 
   const { message } = req.body
-
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ answer: 'Mensaje inválido' })
   }
@@ -23,59 +32,59 @@ export default async function handler(
   // Saludo inicial
   if (message === '__init__') {
     const saludo = '¡Hola! Soy tu asistente virtual. Puedes preguntarme cosas como la hora, el clima, quién me creó, entre otras. 😊'
-    await prisma.message.create({
-      data: { sender: 'bot', text: saludo }
-    })
+    await prisma.message.create({ data: { sender: 'bot', text: saludo } })
     return res.status(200).json({ answer: saludo })
   }
 
-  const lowerMessage = message.toLowerCase().trim()
+  const userInput = normalizeText(message)
 
-  // Guardar mensaje del usuario
   await prisma.message.create({
-    data: {
-      sender: 'user',
-      text: message,
-    },
+    data: { sender: 'user', text: message },
   })
 
-  // Traer respuestas desde base de datos
   const defaultAnswers = await prisma.defaultAnswer.findMany()
 
   let matchResponse = ''
   let suggestions: string[] = []
 
   for (const answer of defaultAnswers) {
-    const keywords = answer.keywords.split(',').map(k => k.trim().toLowerCase())
-    if (keywords.some(keyword => lowerMessage.includes(keyword))) {
+    const keywords = answer.keywords
+      .split(',')
+      .map(k => normalizeText(k))
+
+    if (keywords.some(keyword => userInput === keyword || userInput.includes(keyword))) {
       matchResponse = answer.response
       break
     }
   }
 
   if (!matchResponse) {
-    // Si no hay coincidencia exacta, sugerir por coincidencia parcial
+    const suggestionSet = new Set<string>()
+
     for (const answer of defaultAnswers) {
-      const keywords = answer.keywords.split(',').map(k => k.trim().toLowerCase())
-      if (keywords.some(keyword => lowerMessage.includes(keyword.split(' ')[0]))) {
-        suggestions.push(keywords[0])
+      const keywords = answer.keywords
+        .split(',')
+        .map(k => normalizeText(k))
+
+      for (const keyword of keywords) {
+        const baseWord = keyword.split(' ')[0]
+        if (userInput.includes(baseWord)) {
+          suggestionSet.add(keyword)
+        }
       }
     }
+
+    suggestions = Array.from(suggestionSet)
 
     matchResponse = suggestions.length > 0
       ? `Lo siento, no entendí completamente. ¿Quizás quisiste preguntar sobre: ${suggestions.join(', ')}?`
       : 'Lo siento, no comprendí tu consulta. Intenta con otra pregunta.'
   }
 
-  // Guardar respuesta del bot
   await prisma.message.create({
-    data: {
-      sender: 'bot',
-      text: matchResponse,
-    },
+    data: { sender: 'bot', text: matchResponse },
   })
 
-  // Delay simulado
   await new Promise(resolve => setTimeout(resolve, 800))
 
   return res.status(200).json({ answer: matchResponse, suggestions })
